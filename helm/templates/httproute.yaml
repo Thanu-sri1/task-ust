@@ -1,0 +1,12 @@
+{{- if .Values.httpRoute.enabled }}
+apiVersion: {{ .Values.httpRoute.apiVersion }}
+kind: HTTPRoute
+metadata:
+  name: {{ .Values.httpRoute.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  parentRefs:
+{{ toYaml .Values.httpRoute.parentRefs | nindent 4 }}
+  rules:
+{{ toYaml .Values.httpRoute.rules | nindent 4 }}
+{{- end }}

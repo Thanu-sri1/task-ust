@@ -1,0 +1,20 @@
+{{- if .Values.storageClass.enabled }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.storageClass.name }}
+provisioner: {{ .Values.storageClass.provisioner }}
+{{- with .Values.storageClass.parameters }}
+parameters:
+{{ toYaml . | nindent 2 }}
+{{- end }}
+{{- with .Values.storageClass.reclaimPolicy }}
+reclaimPolicy: {{ . }}
+{{- end }}
+{{- with .Values.storageClass.volumeBindingMode }}
+volumeBindingMode: {{ . }}
+{{- end }}
+{{- if hasKey .Values.storageClass "allowVolumeExpansion" }}
+allowVolumeExpansion: {{ .Values.storageClass.allowVolumeExpansion }}
+{{- end }}
+{{- end }}
