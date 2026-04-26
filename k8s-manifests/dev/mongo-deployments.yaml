@@ -45,8 +45,8 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
       volumeMounts:
-            - name: mongo-vct
-              mountPath: /data/db
+        - name: mongo-vct
+          mountPath: /data/db
   volumeClaimTemplates:
     - metadata:
         name: mongo-vct
