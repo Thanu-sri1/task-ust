@@ -6,70 +6,70 @@ metadata:
 spec:
   parentRefs:
     - name: task-gateway
-      sectionName: http
+      # sectionName: http
   rules:
     - matches:
         - path:
             type: PathPrefix
-            value: /api/auth
+            value: /auth
       filters:
         - type: URLRewrite
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              replacePrefixMatch: /auth
+              replacePrefixMatch: /
       backendRefs:
         - name: auth-service
           port: 3001
     - matches:
         - path:
             type: PathPrefix
-            value: /api/users
+            value: /users
       filters:
         - type: URLRewrite
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              replacePrefixMatch: /users
+              replacePrefixMatch: /
       backendRefs:
         - name: user-service
           port: 3002
     - matches:
         - path:
             type: PathPrefix
-            value: /api/tasks
+            value: /tasks
       filters:
         - type: URLRewrite
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              replacePrefixMatch: /tasks
+              replacePrefixMatch: /
       backendRefs:
         - name: task-service
           port: 3003
     - matches:
         - path:
             type: PathPrefix
-            value: /api/notifications
+            value: /notifications
       filters:
         - type: URLRewrite
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              replacePrefixMatch: /notifications
+              replacePrefixMatch: /
       backendRefs:
         - name: notification-service
           port: 3004
     - matches:
         - path:
             type: PathPrefix
-            value: /api/analytics
+            value: /analytics
       filters:
         - type: URLRewrite
           urlRewrite:
             path:
               type: ReplacePrefixMatch
-              replacePrefixMatch: /analytics
+              replacePrefixMatch: /
       backendRefs:
         - name: analytics-service
           port: 3005
