@@ -3,16 +3,14 @@
 This setup uses the App-of-Apps pattern:
 
 - Parent app: `taskflow-app-of-apps`
-- Child apps:
-  - `taskflow-dev` (uses `helm/values.yaml`)
-  - `taskflow-prod` (uses `helm/values-prod.yaml`)
+- Child apps: one `Application` per microservice per environment
 
 ## Files
 
 - `project.yaml`: Argo CD `AppProject` named `taskflow`
 - `app-of-apps.yaml`: parent `Application` that points to `argocd/apps`
-- `apps/taskflow-dev.yaml`: child app for dev
-- `apps/taskflow-prod.yaml`: child app for prod
+- `apps/dev/*.yaml`: per-microservice child apps for `dev`
+- `apps/prod/*.yaml`: per-microservice child apps for `prod`
 
 ## Apply
 
@@ -30,3 +28,4 @@ Argo CD will automatically create/sync child applications from `argocd/apps/`.
 - Repo URL: `https://github.com/Thanu-sri1/task-ust.git`
 - Branch: `main`
 - `CreateNamespace=true` is enabled for parent and child apps.
+- Child apps reference split Helm charts under `helm/<microservice>`.
