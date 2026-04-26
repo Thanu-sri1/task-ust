@@ -20,9 +20,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 // ── Connection URIs ──────────────────────────────────────────────────────────
-const AUTH_URI = process.env.AUTH_MONGODB_URI || 'mongodb://localhost:27017/auth-db';
-const USER_URI = process.env.USER_MONGODB_URI || 'mongodb://localhost:27017/user-db';
-const TASK_URI = process.env.TASK_MONGODB_URI || 'mongodb://localhost:27017/task-db';
+const AUTH_URI         = process.env.AUTH_MONGODB_URI         || 'mongodb://localhost:27017/auth-db';
+const USER_URI         = process.env.USER_MONGODB_URI         || 'mongodb://localhost:27017/user-db';
+const TASK_URI         = process.env.TASK_MONGODB_URI         || 'mongodb://localhost:27017/task-db';
+const NOTIFICATION_URI = process.env.NOTIFICATION_MONGODB_URI || 'mongodb://localhost:27020/notification-db';
 
 // ── Seed constants ───────────────────────────────────────────────────────────
 const USER_COUNT = 100;
@@ -184,26 +185,36 @@ function buildTaskSchema() {
   );
 }
 
+function buildNotificationSchema() {
+  return new mongoose.Schema(
+    { userId: String, type: String, title: String, message: String, isRead: Boolean, metadata: Object },
+    { timestamps: true }
+  );
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('\n🌱  TaskFlow Database Seeder');
   console.log(`   Users:  ${USER_COUNT}`);
   console.log(`   Tasks:  ${USER_COUNT * TASKS_PER_USER} (${TASKS_PER_USER} per user)\n`);
 
-  // Open three separate connections
-  const authConn = await mongoose.createConnection(AUTH_URI).asPromise();
-  const userConn = await mongoose.createConnection(USER_URI).asPromise();
-  const taskConn = await mongoose.createConnection(TASK_URI).asPromise();
-  console.log('✅  Connected to all 3 MongoDB databases');
+  // Open four separate connections
+  const authConn         = await mongoose.createConnection(AUTH_URI).asPromise();
+  const userConn         = await mongoose.createConnection(USER_URI).asPromise();
+  const taskConn         = await mongoose.createConnection(TASK_URI).asPromise();
+  const notificationConn = await mongoose.createConnection(NOTIFICATION_URI).asPromise();
+  console.log('✅  Connected to all 4 MongoDB databases');
 
-  const AuthUser      = authConn.model('User', buildAuthSchema());
-  const UserProfile   = userConn.model('UserProfile', buildUserProfileSchema());
-  const Task          = taskConn.model('Task', buildTaskSchema());
+  const AuthUser     = authConn.model('User', buildAuthSchema());
+  const UserProfile  = userConn.model('UserProfile', buildUserProfileSchema());
+  const Task         = taskConn.model('Task', buildTaskSchema());
+  const Notification = notificationConn.model('Notification', buildNotificationSchema());
 
   // Clear existing seed data
   await AuthUser.deleteMany({});
   await UserProfile.deleteMany({});
   await Task.deleteMany({});
+  await Notification.deleteMany({});
   console.log('🗑️   Cleared existing data\n');
 
   // Hash the shared password once (bcrypt is slow — do it once and reuse)
@@ -262,20 +273,35 @@ async function main() {
   await Task.insertMany(allTasks, { ordered: false });
   console.log(' done ✅');
 
+  // Seed welcome notifications for all users
+  const notifications = insertedAuth.map((u) => ({
+    userId: u._id.toString(),
+    type: 'welcome',
+    title: 'Welcome to TaskFlow! 👋',
+    message: `Hi ${u.name}, your account is ready. Start by creating your first task.`,
+    isRead: false,
+    metadata: {},
+  }));
+  process.stdout.write(`🔔  Inserting ${notifications.length} welcome notifications...`);
+  await Notification.insertMany(notifications, { ordered: false });
+  console.log(' done ✅');
+
   // Summary
-  const [authCount, userCount, taskCount] = await Promise.all([
+  const [authCount, userCount, taskCount, notifCount] = await Promise.all([
     AuthUser.countDocuments(),
     UserProfile.countDocuments(),
     Task.countDocuments(),
+    Notification.countDocuments(),
   ]);
 
   // Status breakdown
   const taskStats = await Task.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]);
 
   console.log('\n📊  Final counts:');
-  console.log(`   auth-db  → Users:    ${authCount}`);
-  console.log(`   user-db  → Profiles: ${userCount}`);
-  console.log(`   task-db  → Tasks:    ${taskCount}`);
+  console.log(`   auth-db         → Users:         ${authCount}`);
+  console.log(`   user-db         → Profiles:      ${userCount}`);
+  console.log(`   task-db         → Tasks:         ${taskCount}`);
+  console.log(`   notification-db → Notifications: ${notifCount}`);
   console.log('\n   Task status breakdown:');
   taskStats.forEach(({ _id, count }) => console.log(`     ${_id.padEnd(12)}: ${count}`));
 
@@ -287,6 +313,7 @@ async function main() {
   await authConn.close();
   await userConn.close();
   await taskConn.close();
+  await notificationConn.close();
   console.log('👋  Done — connections closed.\n');
 }
 

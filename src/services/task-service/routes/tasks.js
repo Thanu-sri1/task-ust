@@ -1,9 +1,19 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
+const axios = require('axios');
 const Task = require('../models/Task');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
+
+const NOTIFICATION_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3004';
+
+// Fire-and-forget: does not block task operations if notification service is down
+async function notify(userId, type, title, message, metadata = {}) {
+  try {
+    await axios.post(`${NOTIFICATION_URL}/notifications/internal`, { userId, type, title, message, metadata }, { timeout: 2000 });
+  } catch (_) { /* intentionally silent */ }
+}
 
 // GET /tasks — list tasks for the authenticated user
 router.get(
@@ -89,6 +99,7 @@ router.post(
 
     try {
       const task = await Task.create({ ...req.body, userId: req.user.id });
+      notify(req.user.id, 'task_created', 'Task Created', `"${task.title}" has been added to your board.`, { taskId: task._id.toString(), taskTitle: task.title });
       res.status(201).json({ message: 'Task created', task });
     } catch (err) {
       console.error('Create task error:', err);
@@ -124,6 +135,9 @@ router.put(
       );
 
       if (!task) return res.status(404).json({ error: 'Task not found' });
+      if (updates.status === 'done') {
+        notify(req.user.id, 'task_completed', 'Task Completed! 🎉', `"${task.title}" has been marked as done.`, { taskId: task._id.toString(), taskTitle: task.title });
+      }
       res.json({ message: 'Task updated', task });
     } catch (err) {
       console.error('Update task error:', err);

@@ -32,6 +32,8 @@ export const authAPI = {
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
+  getAll: (params) => api.get('/users', { params }),
+  delete: (userId) => api.delete(`/users/${userId}`),
 };
 
 export const taskAPI = {
@@ -41,6 +43,21 @@ export const taskAPI = {
   create: (data) => api.post('/tasks', data),
   update: (id, data) => api.put(`/tasks/${id}`, data),
   delete: (id) => api.delete(`/tasks/${id}`),
+};
+
+export const notificationAPI = {
+  getAll: (params) => api.get('/notifications', { params }),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all'),
+  delete: (id) => api.delete(`/notifications/${id}`),
+};
+
+export const analyticsAPI = {
+  getOverview: () => api.get('/analytics/overview'),
+  getTrends: (days) => api.get('/analytics/trends', { params: { days } }),
+  getTags: () => api.get('/analytics/tags'),
+  getAdminOverview: () => api.get('/analytics/admin/overview'),
 };
 
 export default api;
