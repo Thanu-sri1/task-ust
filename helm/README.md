@@ -2,6 +2,12 @@
 
 The `helm/` folder now contains separate Helm charts for each microservice plus shared resources.
 
+Argo CD compatibility is provided through an umbrella chart at:
+
+- `helm/Chart.yaml`
+- `helm/values.yaml`
+- `helm/values-prod.yaml`
+
 ## Charts
 
 - `shared`
@@ -13,6 +19,13 @@ The `helm/` folder now contains separate Helm charts for each microservice plus 
 - `analytics-service`
 - `api-gateway`
 - `frontend`
+
+## Umbrella chart (for Argo CD `path: helm`)
+
+```bash
+helm upgrade --install taskflow ./helm -f ./helm/values.yaml --namespace dev --create-namespace
+helm upgrade --install taskflow ./helm -f ./helm/values-prod.yaml --namespace prod --create-namespace
+```
 
 ## Install order
 

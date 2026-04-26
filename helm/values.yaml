@@ -1,0 +1,35 @@
+# Dev umbrella values for Argo CD path: helm
+shared:
+  namespace: dev
+
+mongo:
+  enabled: true
+  namespace: dev
+
+auth-service:
+  enabled: true
+  namespace: dev
+
+user-service:
+  enabled: true
+  namespace: dev
+
+task-service:
+  enabled: true
+  namespace: dev
+
+notification-service:
+  enabled: true
+  namespace: dev
+
+analytics-service:
+  enabled: true
+  namespace: dev
+
+api-gateway:
+  enabled: true
+  namespace: dev
+
+frontend:
+  enabled: true
+  namespace: dev
