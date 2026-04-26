@@ -159,7 +159,7 @@ docker compose up --build
 
 ## Quick Start (Local — Without Docker)
 
-### Prerequisites: Node.js 20+, MongoDB running on localhost:27017
+### Prerequisites: Node.js 20+, MongoDB running on mongo:27017
 
 ```bash
 # Install all dependencies

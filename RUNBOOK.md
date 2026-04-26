@@ -188,7 +188,7 @@ Edit `src/services/auth-service/.env`:
 
 ```env
 PORT=3001
-MONGODB_URI=mongodb://localhost:27017/auth-db
+MONGODB_URI=mongodb://mongo:27017/auth-db
 JWT_SECRET=change_this_to_same_value_as_gateway
 JWT_EXPIRES_IN=7d
 ALLOWED_ORIGINS=http://localhost:5173
@@ -353,7 +353,7 @@ cd scripts && node seed.js    # seed.js always clears data before inserting
 
 ```bash
 # auth-db
-mongosh mongodb://localhost:27017/auth-db
+mongosh mongodb://mongo:27017/auth-db
 
 # user-db
 mongosh mongodb://localhost:27018/user-db
@@ -362,7 +362,7 @@ mongosh mongodb://localhost:27018/user-db
 mongosh mongodb://localhost:27019/task-db
 
 # Quick counts
-mongosh mongodb://localhost:27017/auth-db --eval "db.users.countDocuments()"
+mongosh mongodb://mongo:27017/auth-db --eval "db.users.countDocuments()"
 mongosh mongodb://localhost:27019/task-db --eval "db.tasks.countDocuments()"
 ```
 

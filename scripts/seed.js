@@ -2,20 +2,20 @@
  * Seed script — creates 100 users + 10 tasks per user (1 000 tasks total)
  *
  * Environment variables (all optional — defaults work with docker-compose):
- *   MONGODB_URI  (default: mongodb://localhost:27017/taskflow)
+ *   MONGODB_URI  (default: mongodb://mongo:27017/taskflow)
  *
  * Run locally:
  *   node seed.js
  *
  * Run against docker-compose stack:
- *   MONGODB_URI=mongodb://localhost:27017/taskflow node seed.js
+ *   MONGODB_URI=mongodb://mongo:27017/taskflow node seed.js
  */
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 // ── Connection URI ───────────────────────────────────────────────────────────
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/taskflow';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/taskflow';
 
 // ── Seed constants ───────────────────────────────────────────────────────────
 const USER_COUNT = 100;
