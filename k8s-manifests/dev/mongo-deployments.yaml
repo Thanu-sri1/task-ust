@@ -44,9 +44,9 @@ spec:
               command: ["mongosh", "--eval", "db.adminCommand('ping')"]
             initialDelaySeconds: 10
             periodSeconds: 10
-      volumeMounts:
-        - name: mongo-vct
-          mountPath: /data/db
+          volumeMounts:
+            - name: mongo-vct
+              mountPath: /data/db
   volumeClaimTemplates:
     - metadata:
         name: mongo-vct
