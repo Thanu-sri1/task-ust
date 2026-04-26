@@ -1,0 +1,124 @@
+namespace: dev
+
+configMap:
+  enabled: true
+  name: app-config
+  data:
+    AUTH_SERVICE_URL: "http://auth-service:3001"
+    USER_SERVICE_URL: "http://user-service:3002"
+    TASK_SERVICE_URL: "http://task-service:3003"
+    NOTIFICATION_SERVICE_URL: "http://notification-service:3004"
+    ANALYTICS_SERVICE_URL: "http://analytics-service:3005"
+    ALLOWED_ORIGINS: "*"
+    JWT_EXPIRES_IN: "7d"
+    NODE_ENV: "development"
+
+secret:
+  enabled: true
+  name: app-secrets
+  type: Opaque
+  stringData:
+    JWT_SECRET: "change_this_dev_secret_32chars_min"
+    MONGODB_URI: "mongodb://mongo:27017/taskflow"
+  data: {}
+
+storageClass:
+  enabled: true
+  name: storage
+  provisioner: nfs.csi.k8s.io
+  parameters:
+    server: 10.0.1.212
+    share: /var/nfs/general/task-Project
+
+gateway:
+  enabled: true
+  apiVersion: gateway.networking.k8s.io/v1
+  name: task-gateway
+  gatewayClassName: kgateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+
+httpRoute:
+  enabled: true
+  apiVersion: gateway.networking.k8s.io/v1
+  name: task-route
+  parentRefs:
+    - name: task-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auth
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: auth-service
+          port: 3001
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /users
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: user-service
+          port: 3002
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /tasks
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: task-service
+          port: 3003
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /notifications
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: notification-service
+          port: 3004
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /analytics
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: analytics-service
+          port: 3005
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend
+          port: 80

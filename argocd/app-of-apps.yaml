@@ -1,26 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: taskflow-prod
+  name: taskflow-app-of-apps
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: taskflow
   source:
     repoURL: https://github.com/Thanu-sri1/task-ust.git
     targetRevision: main
-    path: helm
-    helm:
-      releaseName: taskflow-prod
-      valueFiles:
-        - values-prod.yaml
-      values: |
-        mongoPersistentVolume:
-          enabled: false
-        mongoPersistentVolumeClaim:
-          enabled: false
+    path: argocd/apps
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: prod
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true

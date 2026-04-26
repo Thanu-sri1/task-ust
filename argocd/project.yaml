@@ -4,10 +4,12 @@ metadata:
   name: taskflow
   namespace: argocd
 spec:
-  description: TaskFlow applications managed by Argo CD
+  description: TaskFlow applications managed by Argo CD (App of Apps)
   sourceRepos:
     - https://github.com/Thanu-sri1/task-ust.git
   destinations:
+    - namespace: argocd
+      server: https://kubernetes.default.svc
     - namespace: dev
       server: https://kubernetes.default.svc
     - namespace: prod

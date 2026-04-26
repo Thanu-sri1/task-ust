@@ -1,0 +1,13 @@
+namespace: prod
+
+configMap:
+  data:
+    ALLOWED_ORIGINS: "https://taskflow.example.com"
+    JWT_EXPIRES_IN: "1d"
+    NODE_ENV: "production"
+
+secret:
+  stringData: null
+  data:
+    JWT_SECRET: REPLACE_WITH_BASE64_ENCODED_STRONG_SECRET
+    MONGODB_URI: REPLACE_WITH_BASE64_ENCODED_ATLAS_URI

@@ -1,32 +1,32 @@
-# Argo CD Setup for TaskFlow (Helm-Based)
+# Argo CD App of Apps for TaskFlow (Helm-Based)
 
-These manifests deploy your existing `helm/` chart through Argo CD for both namespaces:
+This setup uses the App-of-Apps pattern:
 
-- `dev` via `values.yaml`
-- `prod` via `values-prod.yaml`
+- Parent app: `taskflow-app-of-apps`
+- Child apps:
+  - `taskflow-dev` (uses `helm/values.yaml`)
+  - `taskflow-prod` (uses `helm/values-prod.yaml`)
 
 ## Files
 
 - `project.yaml`: Argo CD `AppProject` named `taskflow`
-- `taskflow-dev.yaml`: Argo CD `Application` for dev
-- `taskflow-prod.yaml`: Argo CD `Application` for prod
+- `app-of-apps.yaml`: parent `Application` that points to `argocd/apps`
+- `apps/taskflow-dev.yaml`: child app for dev
+- `apps/taskflow-prod.yaml`: child app for prod
 
 ## Apply
 
+Apply project first, then parent app:
+
 ```bash
 kubectl apply -f argocd/project.yaml
-kubectl apply -f argocd/taskflow-dev.yaml
-kubectl apply -f argocd/taskflow-prod.yaml
+kubectl apply -f argocd/app-of-apps.yaml
 ```
 
-Or apply all at once:
-
-```bash
-kubectl apply -f argocd/
-```
+Argo CD will automatically create/sync child applications from `argocd/apps/`.
 
 ## Notes
 
-- The applications use repo `https://github.com/Thanu-sri1/task-ust.git` and branch `main`.
-- `CreateNamespace=true` is enabled, so Argo CD creates `dev` and `prod` namespaces if missing.
-- No existing project files were modified; only this new `argocd/` folder was added.
+- Repo URL: `https://github.com/Thanu-sri1/task-ust.git`
+- Branch: `main`
+- `CreateNamespace=true` is enabled for parent and child apps.

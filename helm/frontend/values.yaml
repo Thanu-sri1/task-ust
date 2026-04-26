@@ -1,0 +1,17 @@
+enabled: true
+namespace: dev
+name: frontend
+replicas: 1
+image: thanusri22/frontend:v1.1.1
+imagePullPolicy: Always
+containerPort: 8080
+servicePort: 80
+serviceTargetPort: 8080
+serviceType: ClusterIP
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"

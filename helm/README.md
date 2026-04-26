@@ -1,21 +1,47 @@
-# TaskFlow Helm Chart
+# TaskFlow Helm Charts (Split Per Microservice)
 
-This chart was created from the existing `k8s-manifests/dev` resources and supports both environments using values files.
+The `helm/` folder now contains separate Helm charts for each microservice plus shared resources.
 
-## Install or upgrade in dev
+## Charts
+
+- `shared`
+- `mongo`
+- `auth-service`
+- `user-service`
+- `task-service`
+- `notification-service`
+- `analytics-service`
+- `api-gateway`
+- `frontend`
+
+## Install order
+
+Apply shared resources first, then mongo, then the app services.
+
+## Dev install
 
 ```bash
-helm upgrade --install taskflow ./helm -f ./helm/values.yaml --namespace dev --create-namespace
+helm upgrade --install taskflow-shared ./helm/shared -f ./helm/shared/values.yaml --namespace dev --create-namespace
+helm upgrade --install taskflow-mongo ./helm/mongo -f ./helm/mongo/values.yaml --namespace dev
+helm upgrade --install taskflow-auth ./helm/auth-service -f ./helm/auth-service/values.yaml --namespace dev
+helm upgrade --install taskflow-user ./helm/user-service -f ./helm/user-service/values.yaml --namespace dev
+helm upgrade --install taskflow-task ./helm/task-service -f ./helm/task-service/values.yaml --namespace dev
+helm upgrade --install taskflow-notification ./helm/notification-service -f ./helm/notification-service/values.yaml --namespace dev
+helm upgrade --install taskflow-analytics ./helm/analytics-service -f ./helm/analytics-service/values.yaml --namespace dev
+helm upgrade --install taskflow-api-gateway ./helm/api-gateway -f ./helm/api-gateway/values.yaml --namespace dev
+helm upgrade --install taskflow-frontend ./helm/frontend -f ./helm/frontend/values.yaml --namespace dev
 ```
 
-## Install or upgrade in prod
+## Prod install
 
 ```bash
-helm upgrade --install taskflow ./helm -f ./helm/values-prod.yaml --namespace prod --create-namespace
+helm upgrade --install taskflow-shared ./helm/shared -f ./helm/shared/values.yaml -f ./helm/shared/values-prod.yaml --namespace prod --create-namespace
+helm upgrade --install taskflow-mongo ./helm/mongo -f ./helm/mongo/values.yaml -f ./helm/mongo/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-auth ./helm/auth-service -f ./helm/auth-service/values.yaml -f ./helm/auth-service/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-user ./helm/user-service -f ./helm/user-service/values.yaml -f ./helm/user-service/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-task ./helm/task-service -f ./helm/task-service/values.yaml -f ./helm/task-service/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-notification ./helm/notification-service -f ./helm/notification-service/values.yaml -f ./helm/notification-service/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-analytics ./helm/analytics-service -f ./helm/analytics-service/values.yaml -f ./helm/analytics-service/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-api-gateway ./helm/api-gateway -f ./helm/api-gateway/values.yaml -f ./helm/api-gateway/values-prod.yaml --namespace prod
+helm upgrade --install taskflow-frontend ./helm/frontend -f ./helm/frontend/values.yaml -f ./helm/frontend/values-prod.yaml --namespace prod
 ```
-
-## Notes
-
-- Existing files under `k8s-manifests/` are unchanged.
-- `values.yaml` mirrors the dev manifest settings.
-- `values-prod.yaml` contains production-style overrides (namespace, replicas, resources, secret format, and image placeholders).

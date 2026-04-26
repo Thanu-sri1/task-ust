@@ -1,0 +1,25 @@
+enabled: true
+namespace: dev
+name: notification-service
+replicas: 1
+image: thanusri22/notification-service:v1.1.1
+imagePullPolicy: Always
+containerPort: 3004
+servicePort: 3004
+serviceTargetPort: 3004
+serviceType: ClusterIP
+env:
+  - name: PORT
+    value: "3004"
+  - name: MONGODB_URI
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: MONGODB_URI
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
