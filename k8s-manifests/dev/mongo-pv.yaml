@@ -55,6 +55,24 @@ spec:
     path: /data/dev/mongo-task
 
 ---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongo-notification-pv-dev
+  labels:
+    app: mongo-notification
+    env: dev
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /data/dev/mongo-notification
+
+---
 # PersistentVolumeClaims — namespace-scoped (dev)
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -107,4 +125,22 @@ spec:
   selector:
     matchLabels:
       app: mongo-task
+      env: dev
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-notification-pvc
+  namespace: dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      app: mongo-notification
       env: dev

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [auth-service, user-service, task-service, api-gateway]
+        service: [auth-service, user-service, task-service, notification-service, analytics-service, api-gateway]
     steps:
       - uses: actions/checkout@v4
 
@@ -128,7 +128,7 @@ jobs:
       security-events: write
     strategy:
       matrix:
-        service: [auth-service, user-service, task-service, api-gateway, frontend]
+        service: [auth-service, user-service, task-service, notification-service, analytics-service, api-gateway, frontend]
     steps:
       - uses: actions/checkout@v4
 
@@ -211,6 +211,7 @@ jobs:
             --from-literal=AUTH_MONGODB_URI="${{ secrets.AUTH_MONGODB_URI_PROD }}" \
             --from-literal=USER_MONGODB_URI="${{ secrets.USER_MONGODB_URI_PROD }}" \
             --from-literal=TASK_MONGODB_URI="${{ secrets.TASK_MONGODB_URI_PROD }}" \
+            --from-literal=NOTIFICATION_MONGODB_URI="${{ secrets.NOTIFICATION_MONGODB_URI_PROD }}" \
             --save-config \
             --dry-run=client -o yaml | kubectl apply -f -
 
@@ -221,7 +222,7 @@ jobs:
         run: |
           REGISTRY="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}"
           SHA="${{ github.sha }}"
-          for service in auth-service user-service task-service api-gateway; do
+          for service in auth-service user-service task-service notification-service analytics-service api-gateway; do
             kubectl set image deployment/$service \
               $service=$REGISTRY/$service:$SHA -n prod
           done
@@ -230,7 +231,7 @@ jobs:
 
       - name: Wait for rollout
         run: |
-          for dep in auth-service user-service task-service api-gateway frontend; do
+          for dep in auth-service user-service task-service notification-service analytics-service api-gateway frontend; do
             kubectl rollout status deployment/$dep -n prod --timeout=300s
           done
 
