@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   name: user-service
   namespace: dev
-  labels:
-    app: user-service
+  # labels:
+  #   app: user-service
 spec:
   replicas: 1
   selector:
@@ -15,12 +15,12 @@ spec:
       labels:
         app: user-service
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1001
       containers:
         - name: user-service
-          image: YOUR_REGISTRY/user-service:dev
+          image: thanusri22/user-service:v1.1.0
           imagePullPolicy: Always
           ports:
             - containerPort: 3002

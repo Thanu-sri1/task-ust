@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   name: api-gateway
   namespace: dev
-  labels:
-    app: api-gateway
+  # labels:
+  #   app: api-gateway
 spec:
   replicas: 1
   selector:
@@ -15,12 +15,12 @@ spec:
       labels:
         app: api-gateway
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1001
       containers:
         - name: api-gateway
-          image: YOUR_REGISTRY/api-gateway:dev
+          image: thanusri22/api-gateway:v1.1.0
           imagePullPolicy: Always
           ports:
             - containerPort: 3000

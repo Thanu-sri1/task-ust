@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   name: frontend
   namespace: dev
-  labels:
-    app: frontend
+  # labels:
+  #   app: frontend
 spec:
   replicas: 1
   selector:
@@ -15,12 +15,12 @@ spec:
       labels:
         app: frontend
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101        # nginxinc/nginx-unprivileged default uid
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 101        # nginxinc/nginx-unprivileged default uid
       containers:
         - name: frontend
-          image: YOUR_REGISTRY/frontend:dev
+          image: thanusri22/frontend:v1.1.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -57,30 +57,30 @@ spec:
       targetPort: 8080
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: app-ingress
-  namespace: dev
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: taskflow.dev.local
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: api-gateway
-                port:
-                  number: 3000
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: app-ingress
+#   namespace: dev
+#   annotations:
+#     nginx.ingress.kubernetes.io/rewrite-target: /
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#     - host: taskflow.dev.local
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: frontend
+#                 port:
+#                   number: 80
+#           - path: /api
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: api-gateway
+#                 port:
+#                   number: 3000

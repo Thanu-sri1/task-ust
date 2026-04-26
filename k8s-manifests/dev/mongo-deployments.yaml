@@ -1,11 +1,11 @@
 # Single shared MongoDB deployment for dev namespace
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: mongo
   namespace: dev
-  labels:
-    app: mongo
+  # labels:
+  #   app: mongo
 spec:
   replicas: 1
   selector:
@@ -44,10 +44,22 @@ spec:
               command: ["mongosh", "--eval", "db.adminCommand('ping')"]
             initialDelaySeconds: 10
             periodSeconds: 10
-      volumes:
-        - name: mongo-storage
-          persistentVolumeClaim:
-            claimName: mongo-pvc
+      volumeMounts:
+            - name: mongo-vct
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-vct
+      spec:
+        accessModes: ["ReadWriteMany"]
+        storageClassName: "storage"
+        resources:
+          requests:
+            storage: 2Gi
+      # volumes:
+      #   - name: mongo-storage
+      #     persistentVolumeClaim:
+      #       claimName: mongo-pvc
 ---
 apiVersion: v1
 kind: Service

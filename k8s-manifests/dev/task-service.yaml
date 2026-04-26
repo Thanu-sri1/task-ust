@@ -3,8 +3,8 @@ kind: Deployment
 metadata:
   name: task-service
   namespace: dev
-  labels:
-    app: task-service
+  # labels:
+  #   app: task-service
 spec:
   replicas: 1
   selector:
@@ -15,12 +15,12 @@ spec:
       labels:
         app: task-service
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
+      # securityContext:
+      #   runAsNonRoot: true
+      #   runAsUser: 1001
       containers:
         - name: task-service
-          image: YOUR_REGISTRY/task-service:dev
+          image: thanusri22/task-service:v1.1.0
           imagePullPolicy: Always
           ports:
             - containerPort: 3003
