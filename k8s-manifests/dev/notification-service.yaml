@@ -31,7 +31,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: NOTIFICATION_MONGODB_URI
+                  key: MONGODB_URI
           resources:
             requests:
               cpu: "100m"

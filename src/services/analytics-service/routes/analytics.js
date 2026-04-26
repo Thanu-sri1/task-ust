@@ -4,7 +4,6 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Lazy-load the Task model (shared read-only connection to task-db)
 let Task;
 const getTask = () => {
   if (!Task) {

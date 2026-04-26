@@ -2,28 +2,20 @@
  * Seed script — creates 100 users + 10 tasks per user (1 000 tasks total)
  *
  * Environment variables (all optional — defaults work with docker-compose):
- *   AUTH_MONGODB_URI  (default: mongodb://localhost:27017/auth-db)
- *   USER_MONGODB_URI  (default: mongodb://localhost:27017/user-db)
- *   TASK_MONGODB_URI  (default: mongodb://localhost:27017/task-db)
+ *   MONGODB_URI  (default: mongodb://localhost:27017/taskflow)
  *
- * Run locally (MongoDB on localhost):
+ * Run locally:
  *   node seed.js
  *
- * Run against docker-compose stack (exposed ports):
- *   AUTH_MONGODB_URI=mongodb://localhost:27017/auth-db \
- *   USER_MONGODB_URI=mongodb://localhost:27018/user-db \
- *   TASK_MONGODB_URI=mongodb://localhost:27019/task-db \
- *   node seed.js
+ * Run against docker-compose stack:
+ *   MONGODB_URI=mongodb://localhost:27017/taskflow node seed.js
  */
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-// ── Connection URIs ──────────────────────────────────────────────────────────
-const AUTH_URI         = process.env.AUTH_MONGODB_URI         || 'mongodb://localhost:27017/auth-db';
-const USER_URI         = process.env.USER_MONGODB_URI         || 'mongodb://localhost:27017/user-db';
-const TASK_URI         = process.env.TASK_MONGODB_URI         || 'mongodb://localhost:27017/task-db';
-const NOTIFICATION_URI = process.env.NOTIFICATION_MONGODB_URI || 'mongodb://localhost:27020/notification-db';
+// ── Connection URI ───────────────────────────────────────────────────────────
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/taskflow';
 
 // ── Seed constants ───────────────────────────────────────────────────────────
 const USER_COUNT = 100;
@@ -198,17 +190,14 @@ async function main() {
   console.log(`   Users:  ${USER_COUNT}`);
   console.log(`   Tasks:  ${USER_COUNT * TASKS_PER_USER} (${TASKS_PER_USER} per user)\n`);
 
-  // Open four separate connections
-  const authConn         = await mongoose.createConnection(AUTH_URI).asPromise();
-  const userConn         = await mongoose.createConnection(USER_URI).asPromise();
-  const taskConn         = await mongoose.createConnection(TASK_URI).asPromise();
-  const notificationConn = await mongoose.createConnection(NOTIFICATION_URI).asPromise();
-  console.log('✅  Connected to all 4 MongoDB databases');
+  // Single shared connection
+  const conn = await mongoose.createConnection(MONGODB_URI).asPromise();
+  console.log(`✅  Connected to shared MongoDB: ${MONGODB_URI}`);
 
-  const AuthUser     = authConn.model('User', buildAuthSchema());
-  const UserProfile  = userConn.model('UserProfile', buildUserProfileSchema());
-  const Task         = taskConn.model('Task', buildTaskSchema());
-  const Notification = notificationConn.model('Notification', buildNotificationSchema());
+  const AuthUser     = conn.model('User', buildAuthSchema());
+  const UserProfile  = conn.model('UserProfile', buildUserProfileSchema());
+  const Task         = conn.model('Task', buildTaskSchema());
+  const Notification = conn.model('Notification', buildNotificationSchema());
 
   // Clear existing seed data
   await AuthUser.deleteMany({});
@@ -297,11 +286,11 @@ async function main() {
   // Status breakdown
   const taskStats = await Task.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]);
 
-  console.log('\n📊  Final counts:');
-  console.log(`   auth-db         → Users:         ${authCount}`);
-  console.log(`   user-db         → Profiles:      ${userCount}`);
-  console.log(`   task-db         → Tasks:         ${taskCount}`);
-  console.log(`   notification-db → Notifications: ${notifCount}`);
+  console.log('\n📊  Final counts (taskflow db):');
+  console.log(`   users           → ${authCount}`);
+  console.log(`   userprofiles    → ${userCount}`);
+  console.log(`   tasks           → ${taskCount}`);
+  console.log(`   notifications   → ${notifCount}`);
   console.log('\n   Task status breakdown:');
   taskStats.forEach(({ _id, count }) => console.log(`     ${_id.padEnd(12)}: ${count}`));
 
@@ -310,11 +299,8 @@ async function main() {
   console.log(`   Email:    ${insertedAuth[1].email}  (user)`);
   console.log(`   Password: ${DEFAULT_PASSWORD}  (all users)\n`);
 
-  await authConn.close();
-  await userConn.close();
-  await taskConn.close();
-  await notificationConn.close();
-  console.log('👋  Done — connections closed.\n');
+  await conn.close();
+  console.log('👋  Done — connection closed.\n');
 }
 
 main().catch((err) => {

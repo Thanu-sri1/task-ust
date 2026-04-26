@@ -23,7 +23,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Connect to task-db in read-only mode (re-uses existing data, no separate DB)
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {

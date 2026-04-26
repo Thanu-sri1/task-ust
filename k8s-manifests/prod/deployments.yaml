@@ -34,7 +34,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: AUTH_MONGODB_URI
+                  key: MONGODB_URI
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -114,7 +114,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: USER_MONGODB_URI
+                  key: MONGODB_URI
           resources:
             requests:
               cpu: "200m"
@@ -184,7 +184,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: TASK_MONGODB_URI
+                  key: MONGODB_URI
             - name: NOTIFICATION_SERVICE_URL
               valueFrom:
                 configMapKeyRef:
@@ -359,7 +359,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: NOTIFICATION_MONGODB_URI
+                  key: MONGODB_URI
           resources:
             requests:
               cpu: "200m"
@@ -429,7 +429,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: TASK_MONGODB_URI
+                  key: MONGODB_URI
           resources:
             requests:
               cpu: "200m"

@@ -1,69 +1,15 @@
 services:
-  # ─── Databases ──────────────────────────────────────────────────────────────
-  mongo-auth:
+  # ─── Shared Database ─────────────────────────────────────────────────────────
+  mongo:
     image: mongo:7-jammy
-    container_name: mongo-auth
+    container_name: mongo
     restart: unless-stopped
     environment:
-      MONGO_INITDB_DATABASE: auth-db
+      MONGO_INITDB_DATABASE: taskflow
     volumes:
-      - mongo_auth_data:/data/db
+      - mongo_data:/data/db
     ports:
       - "27017:27017"   # exposed so seed script can run from host
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  mongo-user:
-    image: mongo:7-jammy
-    container_name: mongo-user
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: user-db
-    volumes:
-      - mongo_user_data:/data/db
-    ports:
-      - "27018:27017"   # exposed on different host port to avoid conflicts
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  mongo-task:
-    image: mongo:7-jammy
-    container_name: mongo-task
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: task-db
-    volumes:
-      - mongo_task_data:/data/db
-    ports:
-      - "27019:27017"
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  mongo-notification:
-    image: mongo:7-jammy
-    container_name: mongo-notification
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: notification-db
-    volumes:
-      - mongo_notification_data:/data/db
-    ports:
-      - "27020:27017"
     networks:
       - internal
     healthcheck:
@@ -80,19 +26,10 @@ services:
     volumes:
       - ./scripts:/scripts
     environment:
-      AUTH_MONGODB_URI: mongodb://mongo-auth:27017/auth-db
-      USER_MONGODB_URI: mongodb://mongo-user:27017/user-db
-      TASK_MONGODB_URI: mongodb://mongo-task:27017/task-db
-      NOTIFICATION_MONGODB_URI: mongodb://mongo-notification:27017/notification-db
+      MONGODB_URI: mongodb://mongo:27017/taskflow
     command: sh -c "npm install --silent && node seed.js"
     depends_on:
-      mongo-auth:
-        condition: service_healthy
-      mongo-user:
-        condition: service_healthy
-      mongo-task:
-        condition: service_healthy
-      mongo-notification:
+      mongo:
         condition: service_healthy
     networks:
       - internal
@@ -107,9 +44,9 @@ services:
     restart: unless-stopped
     env_file: ./src/services/auth-service/.env
     environment:
-      MONGODB_URI: mongodb://mongo-auth:27017/auth-db
+      MONGODB_URI: mongodb://mongo:27017/taskflow
     depends_on:
-      mongo-auth:
+      mongo:
         condition: service_healthy
     networks:
       - internal
@@ -127,9 +64,9 @@ services:
     restart: unless-stopped
     env_file: ./src/services/user-service/.env
     environment:
-      MONGODB_URI: mongodb://mongo-user:27017/user-db
+      MONGODB_URI: mongodb://mongo:27017/taskflow
     depends_on:
-      mongo-user:
+      mongo:
         condition: service_healthy
     networks:
       - internal
@@ -147,10 +84,10 @@ services:
     restart: unless-stopped
     env_file: ./src/services/task-service/.env
     environment:
-      MONGODB_URI: mongodb://mongo-task:27017/task-db
+      MONGODB_URI: mongodb://mongo:27017/taskflow
       NOTIFICATION_SERVICE_URL: http://notification-service:3004
     depends_on:
-      mongo-task:
+      mongo:
         condition: service_healthy
     networks:
       - internal
@@ -168,9 +105,9 @@ services:
     restart: unless-stopped
     environment:
       PORT: 3004
-      MONGODB_URI: mongodb://mongo-notification:27017/notification-db
+      MONGODB_URI: mongodb://mongo:27017/taskflow
     depends_on:
-      mongo-notification:
+      mongo:
         condition: service_healthy
     networks:
       - internal
@@ -188,9 +125,9 @@ services:
     restart: unless-stopped
     environment:
       PORT: 3005
-      MONGODB_URI: mongodb://mongo-task:27017/task-db   # read-only access to task-db
+      MONGODB_URI: mongodb://mongo:27017/taskflow
     depends_on:
-      mongo-task:
+      mongo:
         condition: service_healthy
     networks:
       - internal
@@ -244,10 +181,7 @@ services:
       - public
 
 volumes:
-  mongo_auth_data:
-  mongo_user_data:
-  mongo_task_data:
-  mongo_notification_data:
+  mongo_data:
 
 networks:
   internal:

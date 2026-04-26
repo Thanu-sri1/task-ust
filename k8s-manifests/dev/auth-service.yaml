@@ -32,7 +32,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: AUTH_MONGODB_URI
+                  key: MONGODB_URI
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
