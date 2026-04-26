@@ -20,7 +20,7 @@ spec:
       #   runAsUser: 1001
       containers:
         - name: api-gateway
-          image: thanusri22/api-gateway:v1.1.0
+          image: thanusri22/api-gateway:v1.1.1
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
