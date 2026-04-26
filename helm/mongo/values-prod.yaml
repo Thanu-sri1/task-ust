@@ -1,4 +1,0 @@
-namespace: prod
-
-volumeClaimTemplate:
-  size: 50Gi

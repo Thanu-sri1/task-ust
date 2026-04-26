@@ -1,26 +1,25 @@
-# Prod umbrella values for Argo CD path: helm
-shared:
-  namespace: prod
-  configMap:
-    data:
-      ALLOWED_ORIGINS: "https://taskflow.example.com"
-      JWT_EXPIRES_IN: "1d"
-      NODE_ENV: "production"
-  secret:
-    stringData: null
-    data:
-      JWT_SECRET: REPLACE_WITH_BASE64_ENCODED_STRONG_SECRET
-      MONGODB_URI: REPLACE_WITH_BASE64_ENCODED_ATLAS_URI
+namespace: prod
+namespaceLabels:
+  environment: prod
+
+configMap:
+  data:
+    ALLOWED_ORIGINS: "https://taskflow.example.com"
+    JWT_EXPIRES_IN: "1d"
+    NODE_ENV: "production"
+
+secret:
+  stringData: null
+  data:
+    JWT_SECRET: REPLACE_WITH_BASE64_ENCODED_STRONG_SECRET
+    MONGODB_URI: REPLACE_WITH_BASE64_ENCODED_ATLAS_URI
 
 mongo:
-  enabled: true
-  namespace: prod
-  volumeClaimTemplate:
-    size: 50Gi
+  statefulSet:
+    volumeClaimTemplate:
+      size: 50Gi
 
-auth-service:
-  enabled: true
-  namespace: prod
+authService:
   replicas: 2
   image: YOUR_REGISTRY/auth-service:latest
   imagePullPolicy: IfNotPresent
@@ -52,9 +51,7 @@ auth-service:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-user-service:
-  enabled: true
-  namespace: prod
+userService:
   replicas: 2
   image: YOUR_REGISTRY/user-service:latest
   imagePullPolicy: IfNotPresent
@@ -86,9 +83,7 @@ user-service:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-task-service:
-  enabled: true
-  namespace: prod
+taskService:
   replicas: 2
   image: YOUR_REGISTRY/task-service:latest
   imagePullPolicy: IfNotPresent
@@ -120,9 +115,7 @@ task-service:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-notification-service:
-  enabled: true
-  namespace: prod
+notificationService:
   replicas: 2
   image: YOUR_REGISTRY/notification-service:latest
   imagePullPolicy: IfNotPresent
@@ -154,9 +147,7 @@ notification-service:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-analytics-service:
-  enabled: true
-  namespace: prod
+analyticsService:
   replicas: 2
   image: YOUR_REGISTRY/analytics-service:latest
   imagePullPolicy: IfNotPresent
@@ -188,9 +179,7 @@ analytics-service:
     initialDelaySeconds: 5
     periodSeconds: 10
 
-api-gateway:
-  enabled: true
-  namespace: prod
+apiGateway:
   replicas: 2
   image: YOUR_REGISTRY/api-gateway:latest
   imagePullPolicy: IfNotPresent
@@ -223,8 +212,6 @@ api-gateway:
     periodSeconds: 10
 
 frontend:
-  enabled: true
-  namespace: prod
   replicas: 2
   image: YOUR_REGISTRY/frontend:latest
   imagePullPolicy: IfNotPresent

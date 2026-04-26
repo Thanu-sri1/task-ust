@@ -1,0 +1,60 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.frontend.name }}
+{{- with .Values.frontend.strategy }}
+  strategy:
+{{ toYaml . | nindent 4 }}
+{{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.frontend.name }}
+    spec:
+{{- with .Values.frontend.podSecurityContext }}
+      securityContext:
+{{ toYaml . | nindent 8 }}
+{{- end }}
+      containers:
+        - name: {{ .Values.frontend.name }}
+          image: {{ .Values.frontend.image }}
+          imagePullPolicy: {{ .Values.frontend.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.frontend.containerPort }}
+{{- with .Values.frontend.env }}
+          env:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.frontend.resources }}
+          resources:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.frontend.livenessProbe }}
+          livenessProbe:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.frontend.readinessProbe }}
+          readinessProbe:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.frontend.name }}
+  ports:
+    - port: {{ .Values.frontend.servicePort }}
+      targetPort: {{ .Values.frontend.serviceTargetPort }}
+  type: {{ .Values.frontend.serviceType }}
+{{- end }}

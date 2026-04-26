@@ -1,0 +1,60 @@
+{{- if .Values.notificationService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.notificationService.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.notificationService.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.notificationService.name }}
+{{- with .Values.notificationService.strategy }}
+  strategy:
+{{ toYaml . | nindent 4 }}
+{{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.notificationService.name }}
+    spec:
+{{- with .Values.notificationService.podSecurityContext }}
+      securityContext:
+{{ toYaml . | nindent 8 }}
+{{- end }}
+      containers:
+        - name: {{ .Values.notificationService.name }}
+          image: {{ .Values.notificationService.image }}
+          imagePullPolicy: {{ .Values.notificationService.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.notificationService.containerPort }}
+{{- with .Values.notificationService.env }}
+          env:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.notificationService.resources }}
+          resources:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.notificationService.livenessProbe }}
+          livenessProbe:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+{{- with .Values.notificationService.readinessProbe }}
+          readinessProbe:
+{{ toYaml . | nindent 12 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.notificationService.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.notificationService.name }}
+  ports:
+    - port: {{ .Values.notificationService.servicePort }}
+      targetPort: {{ .Values.notificationService.serviceTargetPort }}
+  type: {{ .Values.notificationService.serviceType }}
+{{- end }}
