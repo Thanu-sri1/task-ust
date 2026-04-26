@@ -9,6 +9,6 @@ data:
   TASK_SERVICE_URL: "http://task-service:3003"
   NOTIFICATION_SERVICE_URL: "http://notification-service:3004"
   ANALYTICS_SERVICE_URL: "http://analytics-service:3005"
-  ALLOWED_ORIGINS: "http://localhost"
+  ALLOWED_ORIGINS: "*"
   JWT_EXPIRES_IN: "7d"
   NODE_ENV: "development"
