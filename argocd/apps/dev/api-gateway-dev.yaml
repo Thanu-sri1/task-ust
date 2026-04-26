@@ -12,11 +12,41 @@ spec:
   source:
     repoURL: https://github.com/Thanu-sri1/task-ust.git
     targetRevision: main
-    path: helm/api-gateway
+    path: helm
     helm:
       releaseName: taskflow-api-gateway-dev
       valueFiles:
         - values.yaml
+      values: |
+        configMap:
+          enabled: false
+        secret:
+          enabled: false
+        storageClass:
+          enabled: false
+        gateway:
+          enabled: false
+        httpRoute:
+          enabled: false
+        mongo:
+          statefulSet:
+            enabled: false
+          service:
+            enabled: false
+        authService:
+          enabled: false
+        userService:
+          enabled: false
+        taskService:
+          enabled: false
+        notificationService:
+          enabled: false
+        analyticsService:
+          enabled: false
+        apiGateway:
+          enabled: true
+        frontend:
+          enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: dev

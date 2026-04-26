@@ -12,11 +12,41 @@ spec:
   source:
     repoURL: https://github.com/Thanu-sri1/task-ust.git
     targetRevision: main
-    path: helm/shared
+    path: helm
     helm:
       releaseName: taskflow-shared-prod
       valueFiles:
         - values-prod.yaml
+      values: |
+        configMap:
+          enabled: true
+        secret:
+          enabled: true
+        storageClass:
+          enabled: true
+        gateway:
+          enabled: true
+        httpRoute:
+          enabled: true
+        mongo:
+          statefulSet:
+            enabled: false
+          service:
+            enabled: false
+        authService:
+          enabled: false
+        userService:
+          enabled: false
+        taskService:
+          enabled: false
+        notificationService:
+          enabled: false
+        analyticsService:
+          enabled: false
+        apiGateway:
+          enabled: false
+        frontend:
+          enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: prod
