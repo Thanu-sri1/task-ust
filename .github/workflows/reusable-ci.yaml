@@ -1,0 +1,384 @@
+name: Reusable Service CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      trigger_event:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+      service_name:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      helm_values_key:
+        required: true
+        type: string
+      dev_manifest_path:
+        required: true
+        type: string
+      docker_context:
+        required: false
+        default: "."
+        type: string
+      dockerfile_path:
+        required: false
+        default: "./Dockerfile"
+        type: string
+      working_directory:
+        required: false
+        default: "."
+        type: string
+      node_version:
+        required: false
+        default: "20"
+        type: string
+      install_command:
+        required: false
+        default: "npm install"
+        type: string
+      test_command:
+        required: false
+        default: "npm test --if-present"
+        type: string
+      application_build_command:
+        required: false
+        default: ""
+        type: string
+      snyk_severity_threshold:
+        required: false
+        default: "high"
+        type: string
+      sonar_key:
+        required: true
+        type: string
+      ghcr_namespace:
+        required: false
+        default: "project-taskflow"
+        type: string
+      infra_repository:
+        required: false
+        default: "project-taskflow/taskflow"
+        type: string
+      infra_ref:
+        required: false
+        default: "main"
+        type: string
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      SONAR_URL:
+        required: true
+      SNYK_TOKEN:
+        required: true
+      TOKEN:
+        required: true
+      EMAIL_USERNAME:
+        required: false
+      EMAIL_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  resolve-build-strategy:
+    name: Resolve Build Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      reuse_existing_image: ${{ steps.strategy.outputs.reuse_existing_image }}
+      image_repository: ${{ steps.strategy.outputs.image_repository }}
+      image_tag: ${{ steps.strategy.outputs.image_tag }}
+      built_at: ${{ steps.strategy.outputs.built_at }}
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.TOKEN }}
+
+      - name: Resolve Reusable Image
+        id: strategy
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GHCR_NAMESPACE: ${{ inputs.ghcr_namespace }}
+          IMAGE_NAME: ${{ inputs.image_name }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          TRIGGER_EVENT: ${{ inputs.trigger_event }}
+        run: |
+          ghcr_namespace="$(echo "${GHCR_NAMESPACE}" | tr '[:upper:]' '[:lower:]')"
+          image_repository="ghcr.io/${ghcr_namespace}/${IMAGE_NAME}"
+          image_tag="${SOURCE_SHA}"
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          reuse_existing_image="false"
+
+          if [[ "${TRIGGER_EVENT}" == "push" ]]; then
+            pr_api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/commits/${SOURCE_SHA}/pulls"
+            pr_head_sha=""
+
+            if pr_response="$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${pr_api}")"; then
+              pr_head_sha="$(echo "${pr_response}" | jq -r '[.[] | select(.merged_at != null)][0].head.sha // empty')"
+            fi
+
+            if [[ -n "${pr_head_sha}" ]] && docker manifest inspect "${image_repository}:${pr_head_sha}" >/dev/null 2>&1; then
+              image_tag="${pr_head_sha}"
+              reuse_existing_image="true"
+            fi
+          fi
+
+          echo "reuse_existing_image=${reuse_existing_image}" >> "$GITHUB_OUTPUT"
+          echo "image_repository=${image_repository}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${image_tag}" >> "$GITHUB_OUTPUT"
+          echo "built_at=${built_at}" >> "$GITHUB_OUTPUT"
+
+  security-scan:
+    name: Security and Quality Scans
+    needs: resolve-build-strategy
+    if: ${{ needs.resolve-build-strategy.outputs.reuse_existing_image != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Service Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Install Dependencies
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+        run: ${{ inputs.install_command }}
+
+      - name: Run Tests
+        if: ${{ inputs.test_command != '' }}
+        continue-on-error: true
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+        run: ${{ inputs.test_command }}
+
+      - name: Run Application Build
+        if: ${{ inputs.application_build_command != '' }}
+        continue-on-error: true
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+        run: ${{ inputs.application_build_command }}
+
+      - name: SonarQube Scan
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@v4.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
+        with:
+          projectBaseDir: ${{ inputs.working_directory }}
+          args: -Dsonar.projectKey=${{ inputs.sonar_key }}
+
+      - name: SonarQube Quality Gate
+        continue-on-error: true
+        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
+
+      - name: Snyk Open Source Scan
+        continue-on-error: true
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --severity-threshold=${{ inputs.snyk_severity_threshold }} --all-projects
+
+  build-and-scan:
+    name: Build and Container Scan
+    needs:
+      - resolve-build-strategy
+      - security-scan
+    if: ${{ needs.resolve-build-strategy.outputs.reuse_existing_image != 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      image_repository: ${{ steps.meta.outputs.image_repository }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      built_at: ${{ steps.meta.outputs.built_at }}
+    steps:
+      - name: Checkout Service Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.TOKEN }}
+
+      - name: Prepare Metadata
+        id: meta
+        shell: bash
+        env:
+          GHCR_NAMESPACE: ${{ inputs.ghcr_namespace }}
+          IMAGE_NAME: ${{ inputs.image_name }}
+          SOURCE_SHA: ${{ needs.resolve-build-strategy.outputs.image_tag }}
+        run: |
+          ghcr_namespace="$(echo "${GHCR_NAMESPACE}" | tr '[:upper:]' '[:lower:]')"
+          image_repository="ghcr.io/${ghcr_namespace}/${IMAGE_NAME}"
+          built_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+          echo "image_repository=${image_repository}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
+          echo "built_at=${built_at}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.docker_context }}
+          file: ${{ inputs.dockerfile_path }}
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.image_repository }}:${{ steps.meta.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy Vulnerability Scan
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.image_repository }}:${{ steps.meta.outputs.image_tag }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL
+
+      - name: Push Image to GHCR
+        if: ${{ inputs.trigger_event == 'pull_request' || inputs.trigger_event == 'push' }}
+        shell: bash
+        run: docker push "${{ steps.meta.outputs.image_repository }}:${{ steps.meta.outputs.image_tag }}"
+
+  update-dev-manifest:
+    name: Update Dev ArgoCD Manifest
+    needs:
+      - resolve-build-strategy
+      - build-and-scan
+    if: ${{ always() && inputs.trigger_event == 'push' && needs.resolve-build-strategy.result == 'success' && (needs.resolve-build-strategy.outputs.reuse_existing_image == 'true' || needs.build-and-scan.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infra Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.infra_repository }}
+          ref: ${{ inputs.infra_ref }}
+          token: ${{ secrets.TOKEN }}
+          path: infra-repo
+
+      - name: Install yq
+        shell: bash
+        run: |
+          sudo wget -q https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update Dev Manifest
+        shell: bash
+        env:
+          DEV_MANIFEST: infra-repo/${{ inputs.dev_manifest_path }}
+          IMAGE_REPOSITORY: ${{ needs.build-and-scan.outputs.image_repository || needs.resolve-build-strategy.outputs.image_repository }}
+          IMAGE_TAG: ${{ needs.build-and-scan.outputs.image_tag || needs.resolve-build-strategy.outputs.image_tag }}
+          BUILT_AT: ${{ needs.build-and-scan.outputs.built_at || needs.resolve-build-strategy.outputs.built_at }}
+          BUILT_BY: ${{ github.actor }}
+          HELM_VALUES_KEY: ${{ inputs.helm_values_key }}
+        run: |
+          key_exists="$(yq -r '.spec.source.helm.values | from_yaml | has(strenv(HELM_VALUES_KEY))' "${DEV_MANIFEST}")"
+          if [[ "${key_exists}" != "true" ]]; then
+            echo "Expected ${HELM_VALUES_KEY} key in .spec.source.helm.values for ${DEV_MANIFEST}"
+            exit 1
+          fi
+
+          yq -i '
+            .spec.source.helm.values |= (
+              from_yaml |
+              .[strenv(HELM_VALUES_KEY)].image = (strenv(IMAGE_REPOSITORY) + ":" + strenv(IMAGE_TAG)) |
+              to_yaml
+            ) |
+            .metadata.annotations."ci.smartparking.io/last-built-sha" = strenv(IMAGE_TAG) |
+            .metadata.annotations."ci.smartparking.io/last-built-at" = strenv(BUILT_AT) |
+            .metadata.annotations."ci.smartparking.io/last-built-by" = strenv(BUILT_BY)
+          ' "${DEV_MANIFEST}"
+
+      - name: Commit Dev Manifest Changes
+        shell: bash
+        working-directory: infra-repo
+        env:
+          SERVICE_NAME: ${{ inputs.service_name }}
+          IMAGE_TAG: ${{ needs.build-and-scan.outputs.image_tag || needs.resolve-build-strategy.outputs.image_tag }}
+        run: |
+          if git diff --quiet; then
+            echo "No manifest changes detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ inputs.dev_manifest_path }}"
+          git commit -m "ci: update ${SERVICE_NAME} dev image to ${IMAGE_TAG}"
+          git push origin "HEAD:${{ inputs.infra_ref }}"
+
+  notify:
+    name: Send Deployment Notification
+    needs:
+      - resolve-build-strategy
+      - build-and-scan
+      - update-dev-manifest
+    if: ${{ always() && inputs.trigger_event == 'push' && needs.resolve-build-strategy.result == 'success' && needs.update-dev-manifest.result == 'success' && (needs.resolve-build-strategy.outputs.reuse_existing_image == 'true' || needs.build-and-scan.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Mail Configuration
+        id: mail_config
+        shell: bash
+        env:
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: |
+          if [[ -n "${EMAIL_USERNAME}" && -n "${EMAIL_PASSWORD}" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send SMTP Notification
+        if: ${{ steps.mail_config.outputs.enabled == 'true' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "[dev] ${{ inputs.service_name }} updated to ${{ needs.build-and-scan.outputs.image_tag || needs.resolve-build-strategy.outputs.image_tag }}"
+          body: |
+            Service:      ${{ inputs.service_name }}
+            Environment:  development
+            Image:        ${{ needs.build-and-scan.outputs.image_repository || needs.resolve-build-strategy.outputs.image_repository }}:${{ needs.build-and-scan.outputs.image_tag || needs.resolve-build-strategy.outputs.image_tag }}
+            Triggered by: ${{ github.actor }}
+            Commit:       ${{ needs.build-and-scan.outputs.image_tag || needs.resolve-build-strategy.outputs.image_tag }}
+            Run:          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: ${{ secrets.EMAIL_USERNAME }}
+          from: "GitHub Actions <${{ secrets.EMAIL_USERNAME }}>"
+
