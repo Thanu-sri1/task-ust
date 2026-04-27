@@ -1,0 +1,59 @@
+﻿apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskflow-task-service-prod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Thanu-sri1/task-ust.git
+    targetRevision: main
+    path: helm
+    helm:
+      releaseName: taskflow-task-service-prod
+      valueFiles:
+        - values-prod.yaml
+      values: |
+        configMap:
+          enabled: false
+        secret:
+          enabled: false
+        storageClass:
+          enabled: false
+        gateway:
+          enabled: false
+        httpRoute:
+          enabled: false
+        mongo:
+          statefulSet:
+            enabled: false
+          service:
+            enabled: false
+        authService:
+          enabled: false
+        userService:
+          enabled: false
+        taskService:
+          enabled: true
+        notificationService:
+          enabled: false
+        analyticsService:
+          enabled: false
+        apiGateway:
+          enabled: false
+        frontend:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
